@@ -8,7 +8,8 @@ const Box = styled.div`
 
   .boxLink {
     font-size: 14px;
-    color: #2e7BB4
+    color: #2e7BB4;
+    text-decoration: none;
   }
   .title {
     font-size: 32px;
