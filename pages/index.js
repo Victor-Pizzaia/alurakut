@@ -22,7 +22,7 @@ function ProfileSideBar({githubUser}) {
   )
 }
 
-function ComunityBox({boxTitle, data }) {
+function ProfileRelationsBox({boxTitle, data }) {
   return (
     <ProfileRelationsBoxWrapper>
           <h2 className="smallTitle">
@@ -32,9 +32,9 @@ function ComunityBox({boxTitle, data }) {
           <ul>
             {data.map(item => (
               <li key={item.id}>
-                <a href={item.link}>
-                  <img src={item.image} />
-                  <span>{item.title}</span>
+                <a href={item.html_url}>
+                  <img src={item.avatar_url} />
+                  <span>{item.login}</span>
                 </a>
               </li>
             ))}
@@ -44,20 +44,47 @@ function ComunityBox({boxTitle, data }) {
 }
 
 export default function Home() {
-  const [comunidades, setComuniades] = React.useState([{
-    id: '123213213213',
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
-  }]);
+  const [comunidades, setComuniades] = React.useState([]);
+  const [seguidores, setSeguidores] = React.useState([])
   const githubUser = 'Victor-Pizzaia';
   const pessoasFavoritas = [
-    {title: 'leoelias023', link: 'https://github.com/leoelias023', image: 'https://github.com/leoelias023.png'},
-    {title: 'cod3rcursos', link: 'https://github.com/cod3rcursos', image: 'https://github.com/cod3rcursos.png'},
-    {title: 'leonardomleitao', link: 'https://github.com/leonardomleitao', image: 'https://github.com/leonardomleitao.png'},
-    {title: 'maykbrito', link: 'https://github.com/maykbrito', image: 'https://github.com/maykbrito.png'},
-    {title: 'diego3g', link: 'https://github.com/diego3g', image: 'https://github.com/diego3g.png'},
-    {title: 'micaellimedeiros', link: 'https://github.com/micaellimedeiros', image: 'https://github.com/micaellimedeiros.png'},
+    {id: 1, login: 'leoelias023', html_url: 'https://github.com/leoelias023', avatar_url: 'https://github.com/leoelias023.png'},
+    {id: 2, login: 'cod3rcursos', html_url: 'https://github.com/cod3rcursos', avatar_url: 'https://github.com/cod3rcursos.png'},
+    {id: 3, login: 'leonardomleitao', html_url: 'https://github.com/leonardomleitao', avatar_url: 'https://github.com/leonardomleitao.png'},
+    {id: 4, login: 'maykbrito', html_url: 'https://github.com/maykbrito', avatar_url: 'https://github.com/maykbrito.png'},
+    {id: 5, login: 'diego3g', html_url: 'https://github.com/diego3g', avatar_url: 'https://github.com/diego3g.png'},
+    {id: 6, login: 'micaellimedeiros', html_url: 'https://github.com/micaellimedeiros', avatar_url: 'https://github.com/micaellimedeiros.png'},
   ]
+
+  React.useEffect(() => {
+    fetch(`https://api.github.com/users/${githubUser}/followers`)
+      .then(resp => resp.json())
+      .then(setSeguidores)
+
+    // API do GraphQL
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        'Authorization': '70eaf5327518205c639ef63bd70ad0',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({"query": `query {
+          allCommunities {
+            id
+            title
+            imageUrl
+            creatorSlug
+          }
+        }`
+      })
+    })
+    .then((resp) => resp.json())
+    .then((resp) => {
+      setComuniades(resp.data.allCommunities);
+    })
+
+  }, [])
 
   return (
     <>
@@ -82,12 +109,24 @@ export default function Home() {
             const dadosDoForm = new FormData(e.target);
 
             const comunidade = {
-              id: new Date().toISOString(),
               title: dadosDoForm.get('title'),
-              image: dadosDoForm.get('image'),
+              imageUrl: dadosDoForm.get('image'),
+              creatorSlug: githubUser,
             }
 
-            setComuniades(prev => [...prev, comunidade]);
+            fetch('/api/comunidades', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+
+              body: JSON.stringify(comunidade),
+            })
+            .then(async (resp) => {
+              const data = await resp.json();
+              setComuniades(prev => [...prev, data.record]);
+            })
+
           }}>
             <div>
               <input
@@ -112,8 +151,24 @@ export default function Home() {
         </Box>
       </div>
       <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}>
-        <ComunityBox boxTitle={'Pessoas da comunidade'} data={pessoasFavoritas}/>
-        <ComunityBox boxTitle={'Comunidades'} data={comunidades}/>
+        <ProfileRelationsBox boxTitle={'Seguidores'} data={pessoasFavoritas}/>
+        <ProfileRelationsBoxWrapper>
+          <h2 className="smallTitle">
+            Comunidades ({comunidades.length})
+          </h2> 
+
+          <ul>
+            {comunidades.map(item => (
+              <li key={item.id}>
+                <a href={`/comunidades/${item.id}`}>
+                  <img src={item.imageUrl} />
+                  <span>{item.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </ProfileRelationsBoxWrapper>
+        <ProfileRelationsBox boxTitle={'Pessoas da comunidade'} data={seguidores}/>
       </div>
     </MainGrid>
     </>
