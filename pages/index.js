@@ -1,4 +1,6 @@
 import React from 'react';
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 import Box from '../src/components/Box';
 import MainGrid from '../src/components/MainGrid';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
@@ -23,6 +25,7 @@ function ProfileSideBar({githubUser}) {
 }
 
 function ProfileRelationsBox({boxTitle, data }) {
+  console.log(data)
   return (
     <ProfileRelationsBoxWrapper>
           <h2 className="smallTitle">
@@ -43,10 +46,10 @@ function ProfileRelationsBox({boxTitle, data }) {
   )
 }
 
-export default function Home() {
+export default function Home(props) {
   const [comunidades, setComuniades] = React.useState([]);
   const [seguidores, setSeguidores] = React.useState([])
-  const githubUser = 'Victor-Pizzaia';
+  const githubUser = props.githubUser;
   const pessoasFavoritas = [
     {id: 1, login: 'leoelias023', html_url: 'https://github.com/leoelias023', avatar_url: 'https://github.com/leoelias023.png'},
     {id: 2, login: 'cod3rcursos', html_url: 'https://github.com/cod3rcursos', avatar_url: 'https://github.com/cod3rcursos.png'},
@@ -173,4 +176,41 @@ export default function Home() {
     </MainGrid>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+  const cookies = nookies.get(context);
+  const token = cookies.USER_TOKEN;
+  
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+      Authorization: token,
+    }
+  })
+  .then((resp) => resp.json())
+  
+  if (!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  const { githubUser } = jwt.decode(token);
+  if (!githubUser.length) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  return {
+    props: {
+      githubUser
+    },
+  }
 }
